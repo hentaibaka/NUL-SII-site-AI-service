@@ -106,7 +106,8 @@ function start() {
             height: {exact: 480},
             frameRate: {
               ideal: 10,
-              max: 10
+              max: 15,
+              min: 5
             }
           }
     };
