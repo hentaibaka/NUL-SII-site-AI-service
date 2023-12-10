@@ -115,59 +115,79 @@ class VideoTransformTrack(MediaTransformTrack):
                  videoTransformFunc: Callable[[np.ndarray, dict[str, Any]], Coroutine[Any, Any, np.ndarray]] = None, 
                  **kwargs: dict[str, Any]):
         super().__init__(videoTransformFunc, **kwargs)
-
-        self._start_time = None
-        self._prev_diff = 0
-        self._prev_track_time = 0 
-        self._prev_real_time = 0
-        self._prev_process_time = 0
+ 
         self._prev_processed_img = None
+
+        self._this_track_time = 0
+        self._this_track_prev_global_time = None
+        self._this_track_prev_time = 0
+        self._recieved_track_time = 0
+        self._recieved_track_prev_time = 0
+        self._process_time = 0
         self._delay = 0
+        self._frames = 0
+        self._copied_frames = 0
+        self._diff = 0
+        self._recieved_diff = 0
+        self._this_diff = 0
 
-    def transform_frame(self, frame: VideoFrame) -> VideoFrame:
+    async def transform_frame(self, frame: VideoFrame) -> VideoFrame:
+
         start = time.time()
-
-        if (not self._prev_processed_img is None and
-            self._delay >= self._prev_process_time):
+        #если задержка больше, чем время обработки кадра
+        #возвращаем предыдущий кадр, иначе вычисляем новый кадр
+        #чтобы вычисляемый трек сильно не отставал от получемого
+        #и передача данных велась с минимальной задержкой
+        #self._delay > self._process_time
+        if (self._diff > self._this_diff and 
+            not self._prev_processed_img is None):
             img = np.copy(self._prev_processed_img)
+            self._copied_frames += 1
+            #тут что-то поумнее придумать бы
+            self._delay = 0 
         else:
             img = frame.to_ndarray(format="bgr24")
-            img = self.transformFunc(img, **self.kwargs)
+            img = await self.transformFunc(img, **self.kwargs)
             self._prev_processed_img = np.copy(img)
+            self._frames += 1
 
         end = time.time()
+        #замеряем время вычисления кадра
+        self._process_time = end - start
+        #устанавливаем время на полученном треке
+        self._recieved_track_time = frame.time
+        #вычисляем время на изменённом трека
+        if self._this_track_prev_global_time is None:
+            self._this_track_time = end - start
+        else:
+            self._this_track_time += end - self._this_track_prev_global_time
+        #вычисляем разницу во времени на полученном и изменяемом треке
+        #теоретически, эта разница всегда будет > 0
+        self._diff = self._this_track_time - self._recieved_track_time
+        #вычисляем сколько времени прошло с предыдущего кадра
+        self._recieved_diff = self._recieved_track_time - self._recieved_track_prev_time
+        self._this_diff = self._this_track_time - self._this_track_prev_time
+        #вычисляем разницу во времени на кадр
+        if d:=self._process_time - self._recieved_diff > 0:
+            self._delay += d 
+        #вычисляем текущий FPS
+        recieved_fps = round(1 / self._recieved_diff) if self._recieved_diff else '-'
+        this_fps = round(1 / self._this_diff) if self._this_diff else '-'
+        #устанавливаем время(глобальное) на предыдущем кадре
+        self._this_track_prev_global_time = end
+        #устанавливаем время(относительное) на предыдущем кадре
+        self._recieved_track_prev_time = self._recieved_track_time
+        self._this_track_prev_time = self._this_track_time
 
-        self._prev_process_time = end - start
+        copied_perc = round(self._copied_frames * 100 / (self._copied_frames + self._frames))
 
-        if self._start_time is None:
-            self._start_time = time.time()
-            #когда минусовая разница
-            #надо исправлять 
-            #видео передаваться стало позже чем надо
-            #считать не делей а сколько времени прошло с отрисовки прошлого кадра 
-
-        track_time = frame.time
-        real_time = time.time() - self._start_time
-        self._delay = real_time - track_time
-
-        track_frame_time = track_time - self._prev_track_time
-        real_frame_time = real_time - self._prev_real_time
-
-        self._prev_track_time = track_time
-        self._prev_real_time = real_time
-
-        track_fps = round(1 / track_frame_time) if track_frame_time else '-'
-        real_fps = round(1 / real_frame_time) if real_frame_time else '-' 
-
-        diff = real_time - track_time
-        delta_diff = diff - self._prev_diff
-        self._prev_diff = diff
-
-        a = f'tt {round(track_time, 1)} rt {round(real_time, 1)} diff {round(diff, 3)} delta diff {round(delta_diff, 3)}'
-        b = f'TFPS {track_fps} RFPS {real_fps}'
+        a = f'recived time {round(self._recieved_track_time, 1)} time {round(self._this_track_time, 1)} diff {round(self._diff, 1)}'
+        b = f'recived FPS {recieved_fps} this FPS {this_fps} delay {round(self._delay, 3)}'
+        c = f'copied {copied_perc}%'
 
         cv2.putText(img, a, (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         cv2.putText(img, b, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        cv2.putText(img, c, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
         new_frame = VideoFrame.from_ndarray(img, format="bgr24")
 
@@ -181,7 +201,7 @@ class VideoTransformTrack(MediaTransformTrack):
             frame = await self.track.recv()
 
             if self.transformFunc:
-                new_frame = self.transform_frame(frame)
+                new_frame = await self.transform_frame(frame)
                 return new_frame
             else:
                 return frame

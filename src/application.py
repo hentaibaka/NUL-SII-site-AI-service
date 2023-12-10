@@ -1,5 +1,8 @@
 from fastapi import FastAPI, APIRouter
+import uvicorn
+
 from .peer_connections_manager import PeerConnectionsManager
+
 
 class Application():
     app = FastAPI(root_path_in_servers=False)

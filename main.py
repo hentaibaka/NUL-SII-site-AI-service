@@ -3,9 +3,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from src import PeerConnectionsManager, WebRTCApplication, Application
-import projects
+from src import PeerConnectionsManager, WebRTCApplication, Application 
 import settings
+#обязательно должно быть, инициализирует создание роутеров проектов
+import projects
 
 
 # FastAPI app

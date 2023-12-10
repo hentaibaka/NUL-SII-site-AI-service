@@ -1,0 +1,45 @@
+<html>
+    <head>
+        <meta charset="UTF-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Photo demo</title>
+        <style>
+            button {
+                padding: 8px 16px;
+            }
+        
+            pre {
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+        
+            video {
+                width: 100%;
+            }
+        
+            .option {
+                margin-bottom: 8px;
+            }
+        
+            #media {
+                max-width: 1280px;
+            }
+        </style>
+    </head>
+    <body>
+        <form id='form' action='/photo/test/offer' enctype="multipart/form-data" method="post">
+            <label for="file">File</label>
+            <input name= 'file' type="file" accept="image/*"/>
+            <select name="video_transform">
+                <option value="none" selected>No transform</option>
+                <option value="edges">Edge detection</option>
+                <option value="cartoon">Cartoon effect</option>
+                <option value="rotate">Rotate</option>
+            </select>
+            <button type="submit">Отправить</button>
+        </form>
+        <image id='processed-image'>
+        <a id="download-link" href="">Скачать</a>
+        <script src="/static/test_photo.js"></script>
+    </body>
+</html>

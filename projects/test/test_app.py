@@ -1,4 +1,3 @@
-import time
 from typing import Annotated
 import cv2
 import os
@@ -45,7 +44,7 @@ async def test_offer(offer: OfferRTC, video_transform: Annotated[str, Body()] = 
     def dch_open(channel):
         channel.send("+++ opened")
 
-    def vtf(frame: ndarray, video_transform: str) -> ndarray:
+    async def vtf(frame: ndarray, video_transform: str) -> ndarray:
         if video_transform == "cartoon":
             img_color = cv2.pyrDown(cv2.pyrDown(frame))
             for _ in range(6):

@@ -61,7 +61,7 @@ class DedSad:
         return boxes, classes, confidences
     
     @staticmethod
-    def run(frame, **kwargs):
+    async def run(frame, **kwargs):
         boxes, classes, confidences = DedSad.detect(frame)
         frame = DedSad.draw_boxes(boxes, classes, confidences, frame, DedSad._COLORS['green'])
 
