@@ -1,9 +1,7 @@
-import time
 import cv2
 import numpy as np
 import torch
 from ultralytics import YOLO
-from av import VideoFrame
 import os
 
 ROOT = os.path.dirname(__file__)
@@ -14,6 +12,7 @@ class DedSad:
                "red": (0, 0, 255), "white": (255, 255, 255)}
     _model = YOLO(os.path.join(ROOT, 'yolov8n.pt'), task='detect')
     _names = _model.names
+    _prev_pts  = 0
 
     @staticmethod
     def draw_polylines(polylines, classes, scores, frame, color):
@@ -44,9 +43,12 @@ class DedSad:
 
     @staticmethod
     def detect(frame, classes=None):
-        start = time.time()
-
-        results = DedSad._model.predict(frame, save=False, classes=classes, conf=0.55)
+        results = DedSad._model.predict(frame, 
+                                        verbose=False,
+                                        optimize=False,
+                                        save=False, 
+                                        classes=classes, 
+                                        conf=0.55)
 
         names = results[0].names
         boxes = results[0].boxes
@@ -56,22 +58,11 @@ class DedSad:
         boxes = [box.xyxy.to(torch.int32) for box in boxes]
         classes = [names[int(cls)] for cls in classes]
 
-        end = time.time()
-
-        return end - start, boxes, classes, confidences
+        return boxes, classes, confidences
     
     @staticmethod
     async def run(frame, **kwargs):
-        img = frame.to_ndarray(format="bgr24")
-        time, boxes, classes, confidences = DedSad.detect(img)
+        boxes, classes, confidences = DedSad.detect(frame)
+        frame = DedSad.draw_boxes(boxes, classes, confidences, frame, DedSad._COLORS['green'])
 
-        img = DedSad.draw_boxes(boxes, classes, confidences, img, DedSad._COLORS['green'])
-        
-        cv2.putText(img, f'{round(1 / time, 1)} FPS, {round(time * 1000)} ms per frame', (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, DedSad._COLORS['white'], 1)
-        
-        new_frame = VideoFrame.from_ndarray(img, format="bgr24")
-        new_frame.pts = frame.pts
-        new_frame.time_base = frame.time_base
-
-        return new_frame
-
+        return frame

@@ -1,4 +1,3 @@
-import time
 from typing import Annotated
 import cv2
 import os
@@ -8,6 +7,7 @@ from aiortc import RTCSessionDescription
 
 from fastapi import Body, Request, APIRouter
 from fastapi.responses import HTMLResponse, FileResponse
+from numpy import ndarray
 
 
 from src import WebRTCApplication
@@ -44,18 +44,14 @@ async def test_offer(offer: OfferRTC, video_transform: Annotated[str, Body()] = 
     def dch_open(channel):
         channel.send("+++ opened")
 
-    async def vtf(frame: VideoFrame, video_transform: str) -> VideoFrame:
+    async def vtf(frame: ndarray, video_transform: str) -> ndarray:
         if video_transform == "cartoon":
-            img = frame.to_ndarray(format="bgr24")
-
-            # prepare color
-            img_color = cv2.pyrDown(cv2.pyrDown(img))
+            img_color = cv2.pyrDown(cv2.pyrDown(frame))
             for _ in range(6):
                 img_color = cv2.bilateralFilter(img_color, 9, 9, 7)
             img_color = cv2.pyrUp(cv2.pyrUp(img_color))
 
-            # prepare edges
-            img_edges = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+            img_edges = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
             img_edges = cv2.adaptiveThreshold(
                 cv2.medianBlur(img_edges, 7),
                 255,
@@ -66,34 +62,15 @@ async def test_offer(offer: OfferRTC, video_transform: Annotated[str, Body()] = 
             )
             img_edges = cv2.cvtColor(img_edges, cv2.COLOR_GRAY2RGB)
 
-            # combine color and edges
-            img = cv2.bitwise_and(img_color, img_edges)
-
-            # rebuild a VideoFrame, preserving timing information
-            new_frame = VideoFrame.from_ndarray(img, format="bgr24")
-            new_frame.pts = frame.pts
-            new_frame.time_base = frame.time_base
+            new_frame = cv2.bitwise_and(img_color, img_edges)
             return new_frame
         elif video_transform == "edges":
-            # perform edge detection
-            img = frame.to_ndarray(format="bgr24")
-            img = cv2.cvtColor(cv2.Canny(img, 100, 200), cv2.COLOR_GRAY2BGR)
-            # rebuild a VideoFrame, preserving timing information
-            new_frame = VideoFrame.from_ndarray(img, format="bgr24")
-            new_frame.pts = frame.pts
-            new_frame.time_base = frame.time_base
+            new_frame = cv2.cvtColor(cv2.Canny(frame, 100, 200), cv2.COLOR_GRAY2BGR)
             return new_frame
         elif video_transform == "rotate":
-            # rotate image
-            img = frame.to_ndarray(format="bgr24")
-            rows, cols, _ = img.shape
-            M = cv2.getRotationMatrix2D((cols / 2, rows / 2), frame.time * 45, 1)
-            img = cv2.warpAffine(img, M, (cols, rows))
-
-            # rebuild a VideoFrame, preserving timing information
-            new_frame = VideoFrame.from_ndarray(img, format="bgr24")
-            new_frame.pts = frame.pts
-            new_frame.time_base = frame.time_base
+            rows, cols, _ = frame.shape
+            M = cv2.getRotationMatrix2D((cols / 2, rows / 2), 45, 1)
+            new_frame = cv2.warpAffine(frame, M, (cols, rows))
             return new_frame
         else:
             return frame

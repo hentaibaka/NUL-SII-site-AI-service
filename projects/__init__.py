@@ -1,3 +1,4 @@
+#сюда вписывать новые проекты
 from .test import test_app
 from .furdilov_dedsad import detsad_app
-#сюда вписывать новые проекты
+from .test_photo import test_photo_app
