@@ -1,4 +1,6 @@
 from abc import abstractmethod
+import logging
+import uuid
 import asyncio
 import fractions
 import time
@@ -96,9 +98,13 @@ class MediaTransformTrack(MediaStreamTrack):
         self.track: MediaStreamTrack = None
         self.transformFunc = transformFunc
         self.kwargs = kwargs
+        self.logger = logging.getLogger(__name__)
+
+        self.logger.setLevel(logging.DEBUG)
 
     def bind_track(self, track: MediaStreamTrack) -> None:
         self.track = self.relay.subscribe(track, buffered=True)
+        self.logger.debug(f"{self.track.kind} track {self.track.id} was binded")
 
     @abstractmethod
     async def recv(self) -> VideoFrame | AudioFrame:
@@ -188,6 +194,8 @@ class VideoTransformTrack(MediaTransformTrack):
         cv2.putText(img, a, (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         cv2.putText(img, b, (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         cv2.putText(img, c, (20, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+        self.logger.debug(" ".join([a, b, c]))
 
         new_frame = VideoFrame.from_ndarray(img, format="bgr24")
 

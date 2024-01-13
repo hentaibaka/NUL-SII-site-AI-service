@@ -19,6 +19,14 @@ app.mount('/static', StaticFiles(directory='static'), name='static')
 
 # CORS
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.CORS_ORIGINS,
+    allow_credentials=False,
+    allow_methods=['GET', 'POST'],
+    allow_headers=["*"],
+)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,4 +37,10 @@ app.add_middleware(
 )
 
 if __name__ == "__main__":
-    uvicorn.run(app)
+    config = uvicorn.Config("main:app", 
+                            host=settings.HOST, 
+                            port=settings.PORT,
+                            workers=settings.WORKERS,  
+                            log_level="error")
+    server = uvicorn.Server(config)
+    server.run()
