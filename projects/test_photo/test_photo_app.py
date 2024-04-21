@@ -76,4 +76,4 @@ async def test_offer(file: Annotated[UploadFile, File()] = None,
 
 @router.get('/script', response_class=FileResponse)
 async def test_script():
-    return None
+    return FileResponse(os.path.join(ROOT, 'static/test_photo.js'), media_type='text/javascript')
