@@ -28,14 +28,6 @@ app.add_middleware(
 )
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=False,
-    allow_methods=['GET', 'POST'],
-    allow_headers=["*"],
-)
-
 if __name__ == "__main__":
     config = uvicorn.Config("main:app", 
                             host=settings.HOST, 

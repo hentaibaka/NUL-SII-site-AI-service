@@ -1,3 +1,4 @@
+import os
 from typing import Annotated
 import cv2
 import numpy as np
@@ -5,7 +6,7 @@ from PIL import Image
 from io import BytesIO
 
 from fastapi import Body, File, Form, Request, APIRouter, UploadFile
-from fastapi.responses import HTMLResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 
 from src import Application
 from settings import ROOT, TEMPLATES
@@ -72,3 +73,7 @@ async def test_offer(file: Annotated[UploadFile, File()] = None,
     image_bytes.seek(0)
     
     return StreamingResponse(image_bytes, media_type='image/jpeg')
+
+@router.get('/script', response_class=FileResponse)
+async def test_script():
+    return None
