@@ -75,7 +75,7 @@ function negotiate() {
         }
 
         document.getElementById('offer-sdp').textContent = offer.sdp;
-        return fetch('/webrtc/dedsad/offer', {
+        return fetch('/api/ai/webrtc/dedsad/offer', {
             body: JSON.stringify({sdp: offer.sdp,
                     type: offer.type
                 }

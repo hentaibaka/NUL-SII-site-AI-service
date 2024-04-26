@@ -12,10 +12,10 @@ import projects
 # FastAPI app
 app = FastAPI(lifespan=PeerConnectionsManager.lifespan)
 
-app.mount('/webrtc', WebRTCApplication.include_routers())
-app.mount('/photo', Application.include_routers())
+app.mount('/api/ai/webrtc', WebRTCApplication.include_routers())
+app.mount('/api/ai/photo', Application.include_routers())
 
-app.mount('/static', StaticFiles(directory='static'), name='static')
+app.mount('/ai/static', StaticFiles(directory='static'), name='static')
 
 # CORS
 
@@ -27,14 +27,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
-    allow_credentials=False,
-    allow_methods=['GET', 'POST'],
-    allow_headers=["*"],
-)
 
 if __name__ == "__main__":
     config = uvicorn.Config("main:app", 
