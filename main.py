@@ -12,10 +12,10 @@ import projects
 # FastAPI app
 app = FastAPI(lifespan=PeerConnectionsManager.lifespan)
 
-app.mount('/webrtc', WebRTCApplication.include_routers())
-app.mount('/photo', Application.include_routers())
+app.mount('/api/ai/webrtc', WebRTCApplication.include_routers())
+app.mount('/api/ai/photo', Application.include_routers())
 
-app.mount('/static', StaticFiles(directory='static'), name='static')
+app.mount('/ai/static', StaticFiles(directory='static'), name='static')
 
 # CORS
 

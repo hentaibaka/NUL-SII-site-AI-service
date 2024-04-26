@@ -3,7 +3,7 @@ function handleFormSubmit(event) {
 
     let form_data = new FormData(applicantForm);
 
-    fetch('/photo/test/offer', {
+    fetch('/api/ai/photo/test/offer', {
         method: 'POST',
         body: form_data,
     })
